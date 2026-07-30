@@ -13,6 +13,7 @@ class InventoryItem {
   final int lowStockAlert;
   final String? hsn;
   final double gstRate; // 0, 5, 12, 18, 28
+  final double? weightKg;
   final DateTime asOfDate;
   final String? category;
   final DateTime createdAt;
@@ -22,7 +23,8 @@ class InventoryItem {
     required this.name,
     this.unit = 'PCS',
     this.secondaryUnit,
-    this.salePrice = 0.0,
+    double? salePrice,
+    double? unitPrice,
     this.purchasePrice = 0.0,
     this.taxIncluded = false,
     this.openingStock = 0,
@@ -30,10 +32,12 @@ class InventoryItem {
     this.lowStockAlert = 5,
     this.hsn,
     this.gstRate = 5.0,
+    this.weightKg,
     DateTime? asOfDate,
     this.category,
     DateTime? createdAt,
   })  : id = id ?? const Uuid().v4(),
+        salePrice = salePrice ?? (unitPrice ?? 0.0),
         stockQuantity = stockQuantity ?? openingStock,
         asOfDate = asOfDate ?? DateTime.now(),
         createdAt = createdAt ?? DateTime.now();
@@ -64,6 +68,7 @@ class InventoryItem {
       lowStockAlert: alertVal,
       hsn: json['hsn']?.toString(),
       gstRate: gstVal,
+      weightKg: double.tryParse(json['weight_kg']?.toString() ?? ''),
       asOfDate: json['as_of_date'] != null ? (DateTime.tryParse(json['as_of_date'].toString()) ?? DateTime.now()) : DateTime.now(),
       category: json['category']?.toString() ?? 'General Utensils',
       createdAt: json['created_at'] != null ? (DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()) : DateTime.now(),
@@ -84,6 +89,7 @@ class InventoryItem {
       'low_stock_alert': lowStockAlert,
       'hsn': hsn,
       'gst_rate': gstRate,
+      'weight_kg': weightKg,
       'as_of_date': asOfDate.toIso8601String(),
       'category': category,
       'created_at': createdAt.toIso8601String(),
@@ -104,6 +110,7 @@ class InventoryItem {
       'low_stock_alert': lowStockAlert,
       'hsn': hsn,
       'gst_rate': gstRate,
+      'weight_kg': weightKg,
       'category': category ?? 'General Utensils',
       'created_at': createdAt.toIso8601String(),
     };
@@ -122,6 +129,7 @@ class InventoryItem {
       'low_stock_alert': lowStockAlert,
       'hsn': hsn,
       'gst_rate': gstRate,
+      'weight_kg': weightKg,
       'category': category ?? 'General Utensils',
     };
   }
@@ -139,6 +147,7 @@ class InventoryItem {
     int? lowStockAlert,
     String? hsn,
     double? gstRate,
+    double? weightKg,
     DateTime? asOfDate,
     String? category,
     DateTime? createdAt,
@@ -156,6 +165,7 @@ class InventoryItem {
       lowStockAlert: lowStockAlert ?? this.lowStockAlert,
       hsn: hsn ?? this.hsn,
       gstRate: gstRate ?? this.gstRate,
+      weightKg: weightKg ?? this.weightKg,
       asOfDate: asOfDate ?? this.asOfDate,
       category: category ?? this.category,
       createdAt: createdAt ?? this.createdAt,

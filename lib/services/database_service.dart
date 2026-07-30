@@ -355,6 +355,25 @@ class DatabaseService extends ChangeNotifier {
     _setLoading(false);
   }
 
+  double calculatePartyNetBalance(String partyId) {
+    final partyIndex = _parties.indexWhere((p) => p.id == partyId);
+    if (partyIndex == -1) return 0.0;
+    final party = _parties[partyIndex];
+
+    final partyTxns = _cashEntries.where((e) => e.partyId == partyId).toList();
+    double totalCashIn = 0.0;
+    double totalCashOut = 0.0;
+    for (final txn in partyTxns) {
+      if (txn.type == CashEntryType.cashIn) {
+        totalCashIn += txn.amount;
+      } else {
+        totalCashOut += txn.amount;
+      }
+    }
+
+    return party.openingBalance + totalCashIn - totalCashOut;
+  }
+
   // Setup Supabase Real-Time Streams for live database updates with error isolation
   void _setupRealtimeStreams(String userId) {
     _cancelSubscriptions();
@@ -1056,9 +1075,9 @@ class DatabaseService extends ChangeNotifier {
   List<InventoryItem> _defaultUtensilsInventory() {
     return [
       InventoryItem(
-        id: 'ut_1',
+        id: const Uuid().v4(),
         name: 'Stainless Steel Lota (Embossed)',
-        unitPrice: 180.00,
+        salePrice: 180.00,
         stockQuantity: 45,
         unit: 'Pieces',
         weightKg: 0.35,
@@ -1066,9 +1085,9 @@ class DatabaseService extends ChangeNotifier {
         category: 'Pooja Utensils',
       ),
       InventoryItem(
-        id: 'ut_2',
+        id: const Uuid().v4(),
         name: 'Brass Jug Premium 1.5L',
-        unitPrice: 650.00,
+        salePrice: 650.00,
         stockQuantity: 22,
         unit: 'Pieces',
         weightKg: 1.20,
@@ -1076,9 +1095,9 @@ class DatabaseService extends ChangeNotifier {
         category: 'Brassware',
       ),
       InventoryItem(
-        id: 'ut_3',
+        id: const Uuid().v4(),
         name: 'Heavy Aluminium Patila 10L',
-        unitPrice: 320.00,
+        salePrice: 320.00,
         stockQuantity: 60,
         unit: 'Kg',
         weightKg: 2.50,
@@ -1086,9 +1105,9 @@ class DatabaseService extends ChangeNotifier {
         category: 'Cookware',
       ),
       InventoryItem(
-        id: 'ut_4',
+        id: const Uuid().v4(),
         name: 'Stainless Steel Thali Set (6-pc)',
-        unitPrice: 450.00,
+        salePrice: 450.00,
         stockQuantity: 30,
         unit: 'Set',
         weightKg: 1.10,
@@ -1096,9 +1115,9 @@ class DatabaseService extends ChangeNotifier {
         category: 'Dinnerware',
       ),
       InventoryItem(
-        id: 'ut_5',
+        id: const Uuid().v4(),
         name: 'Pure Copper Bottle 1000ml',
-        unitPrice: 850.00,
+        salePrice: 850.00,
         stockQuantity: 18,
         unit: 'Pieces',
         weightKg: 0.42,

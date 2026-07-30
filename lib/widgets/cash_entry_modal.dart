@@ -100,7 +100,7 @@ class _CashEntryModalState extends State<CashEntryModal> {
       final existingItems = dbService.searchInventory(inputName);
       final exactMatch = existingItems.firstWhere(
         (i) => i.name.toLowerCase() == inputName.toLowerCase(),
-        orElse: () => InventoryItem(id: '', name: '', unitPrice: 0, stockQuantity: 0),
+        orElse: () => InventoryItem(id: '', name: '', salePrice: 0, stockQuantity: 0),
       );
 
       if (exactMatch.id.isEmpty) {
@@ -135,7 +135,7 @@ class _CashEntryModalState extends State<CashEntryModal> {
           final newItem = InventoryItem(
             id: const Uuid().v4(),
             name: inputName,
-            unitPrice: unitPrice > 0 ? unitPrice : (amount / (qty > 0 ? qty : 1)),
+            salePrice: unitPrice > 0 ? unitPrice : (amount / (qty > 0 ? qty : 1)),
             stockQuantity: widget.entryType == CashEntryType.cashIn ? 0 : qty,
             unit: 'Pieces',
             category: 'General Utensils',

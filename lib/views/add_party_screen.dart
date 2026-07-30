@@ -136,8 +136,6 @@ class _AddPartyScreenState extends State<AddPartyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(_selectedType == PartyType.supplier ? 'Add Supplier' : 'Add Customer'),

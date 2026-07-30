@@ -510,25 +510,27 @@ class _CashbookScreenState extends State<CashbookScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           onSelected: (type) => _openCashModal(context, type),
                           itemBuilder: (ctx) => [
-                        const PopupMenuItem(
-                          value: CashEntryType.cashIn,
-                          child: Row(
-                            children: [
-                              Icon(Icons.arrow_downward_rounded, color: AppConstants.cashInColor),
-                              SizedBox(width: 8),
-                              Text('Record Cash In (+)'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: CashEntryType.cashOut,
-                          child: Row(
-                            children: [
-                              Icon(Icons.arrow_upward_rounded, color: AppConstants.cashOutColor),
-                              SizedBox(width: 8),
-                              Text('Record Cash Out (-)'),
-                            ],
-                          ),
+                            const PopupMenuItem(
+                              value: CashEntryType.cashIn,
+                              child: Row(
+                                children: [
+                                  Icon(Icons.arrow_downward_rounded, color: AppConstants.cashInColor),
+                                  SizedBox(width: 8),
+                                  Text('Record Cash In (+)'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: CashEntryType.cashOut,
+                              child: Row(
+                                children: [
+                                  Icon(Icons.arrow_upward_rounded, color: AppConstants.cashOutColor),
+                                  SizedBox(width: 8),
+                                  Text('Record Cash Out (-)'),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
