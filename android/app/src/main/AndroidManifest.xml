@@ -4,6 +4,9 @@
     <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
     <!-- Internet access for Supabase cloud sync & Google Sign-In -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Contacts Permissions -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.WRITE_CONTACTS" />
     <application
         android:label="omnibook"
         android:name="${applicationName}"

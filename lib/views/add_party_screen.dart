@@ -49,18 +49,26 @@ class _AddPartyScreenState extends State<AddPartyScreen> {
   }
 
   Future<void> _pickFromContacts() async {
-    final status = await Permission.contacts.request();
-    if (!status.isGranted) {
+    bool granted = await FlutterContacts.requestPermission(readonly: true);
+    if (!granted) {
+      final status = await Permission.contacts.request();
+      granted = status.isGranted;
+    }
+
+    if (!granted) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Contacts permission is required to pick a contact.')),
+          const SnackBar(content: Text('Contact permission denied. Enable it in App Settings.')),
         );
       }
       return;
     }
 
     try {
-      List<Contact> contacts = await FlutterContacts.getContacts(withProperties: true);
+      final contacts = await FlutterContacts.getContacts(
+        withProperties: true,
+        withPhoto: false,
+      );
       if (!mounted) return;
 
       showModalBottomSheet(
