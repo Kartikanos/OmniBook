@@ -8,6 +8,7 @@ import '../services/database_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/cash_entry_modal.dart';
 import '../widgets/shimmer_loader.dart';
+import 'cashbook_report_screen.dart';
 
 enum _DateMode { all, singleDate, customMonth, customRange }
 
@@ -485,18 +486,30 @@ class _CashbookScreenState extends State<CashbookScreen> {
                         ),
                       ],
                     ),
-                    PopupMenuButton<CashEntryType>(
-                      icon: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppConstants.primaryColor,
-                          borderRadius: BorderRadius.circular(12),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.bar_chart_rounded, color: AppConstants.primaryColor, size: 28),
+                          tooltip: 'View Reports',
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (ctx) => const CashbookReportScreen()),
+                            );
+                          },
                         ),
-                        child: const Icon(Icons.add_rounded, color: Colors.white),
-                      ),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      onSelected: (type) => _openCashModal(context, type),
-                      itemBuilder: (ctx) => [
+                        const SizedBox(width: 4),
+                        PopupMenuButton<CashEntryType>(
+                          icon: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppConstants.primaryColor,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.add_rounded, color: Colors.white),
+                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          onSelected: (type) => _openCashModal(context, type),
+                          itemBuilder: (ctx) => [
                         const PopupMenuItem(
                           value: CashEntryType.cashIn,
                           child: Row(

@@ -10,6 +10,8 @@ import '../services/database_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/shimmer_loader.dart';
 
+import 'add_party_screen.dart';
+
 class PartiesScreen extends StatefulWidget {
   const PartiesScreen({super.key});
 
@@ -38,110 +40,8 @@ class _PartiesScreenState extends State<PartiesScreen> {
   }
 
   void _showAddPartyDialog(BuildContext context) {
-    final formKey = GlobalKey<FormState>();
-    final nameCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    final balCtrl = TextEditingController(text: '0');
-    PartyType selectedType = PartyType.customer;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Add Unified Party Account'),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          content: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: 'Party / Business Name'),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    controller: phoneCtrl,
-                    keyboardType: TextInputType.phone,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(10),
-                    ],
-                    decoration: const InputDecoration(
-                      labelText: 'Phone Number',
-                      hintText: '10-digit mobile number',
-                    ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Phone number is required';
-                      if (v.trim().length != 10) return 'Phone number must be exactly 10 digits';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  const Text('Party Type:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<PartyType>(
-                    value: selectedType,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: PartyType.customer, child: Text('Customer (Receivable)')),
-                      DropdownMenuItem(value: PartyType.supplier, child: Text('Supplier (Payable)')),
-                      DropdownMenuItem(value: PartyType.both, child: Text('Both Supplier & Customer')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) setDialogState(() => selectedType = val);
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    controller: balCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      labelText: 'Opening Balance (${AppConstants.currencySymbol})',
-                      hintText: '+ for Receivable, - for Payable',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppConstants.primaryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: () async {
-                if (formKey.currentState!.validate()) {
-                  final dbService = Provider.of<DatabaseService>(context, listen: false);
-                  final authService = Provider.of<AuthService>(context, listen: false);
-
-                  final newParty = Party(
-                    name: nameCtrl.text.trim(),
-                    phone: phoneCtrl.text.trim(),
-                    type: selectedType,
-                    openingBalance: double.tryParse(balCtrl.text.trim()) ?? 0.0,
-                  );
-
-                  await dbService.addParty(newParty, isGuest: authService.isGuestMode);
-                  if (ctx.mounted) Navigator.of(ctx).pop();
-                }
-              },
-              child: const Text('Save Party'),
-            ),
-          ],
-        ),
-      ),
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (ctx) => const AddPartyScreen()),
     );
   }
 
@@ -299,7 +199,6 @@ class _PartiesScreenState extends State<PartiesScreen> {
                           separatorBuilder: (ctx, index) => const SizedBox(height: 10),
                           itemBuilder: (context, index) {
                             final party = parties[index];
-                            final isReceivable = party.currentBalance >= 0;
 
                             Color tagColor = AppConstants.cashInColor; // Green for customer
                             if (party.type == PartyType.supplier) {
@@ -384,31 +283,42 @@ class _PartiesScreenState extends State<PartiesScreen> {
                                       Column(
                                         crossAxisAlignment: CrossAxisAlignment.end,
                                         children: [
-                                          FittedBox(
-                                            child: Text(
-                                              AppConstants.formatCurrency(party.currentBalance.abs()),
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 15,
-                                                color: isReceivable ? AppConstants.cashInColor : AppConstants.cashOutColor,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: (isReceivable ? AppConstants.cashInColor : AppConstants.cashOutColor).withOpacity(0.12),
-                                              borderRadius: BorderRadius.circular(6),
-                                            ),
-                                            child: Text(
-                                              isReceivable ? 'Receivable' : 'Payable',
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                                color: isReceivable ? AppConstants.cashInColor : AppConstants.cashOutColor,
-                                              ),
-                                            ),
+                                          Builder(
+                                            builder: (context) {
+                                              final netBal = dbService.calculatePartyNetBalance(party.id);
+                                              final isRec = netBal >= 0;
+                                              return Column(
+                                                crossAxisAlignment: CrossAxisAlignment.end,
+                                                children: [
+                                                  FittedBox(
+                                                    child: Text(
+                                                      AppConstants.formatCurrency(netBal.abs()),
+                                                      style: TextStyle(
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 15,
+                                                        color: isRec ? AppConstants.cashInColor : AppConstants.cashOutColor,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: (isRec ? AppConstants.cashInColor : AppConstants.cashOutColor).withOpacity(0.12),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                    ),
+                                                    child: Text(
+                                                      isRec ? 'Receivable' : 'Payable',
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: isRec ? AppConstants.cashInColor : AppConstants.cashOutColor,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              );
+                                            },
                                           ),
                                         ],
                                       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
@@ -22,6 +23,7 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
+  bool _isNavVisible = true;
 
   @override
   void initState() {
@@ -36,6 +38,7 @@ class _MainShellState extends State<MainShell> {
   void _navigateToTab(int index) {
     setState(() {
       _currentIndex = index;
+      _isNavVisible = true;
     });
   }
 
@@ -66,34 +69,57 @@ class _MainShellState extends State<MainShell> {
         if (didPop) return;
         if (_currentIndex != 0) {
           // Navigate back to Dashboard tab instead of exiting
-          setState(() => _currentIndex = 0);
+          setState(() {
+            _currentIndex = 0;
+            _isNavVisible = true;
+          });
         } else {
           // Already on Dashboard — close the app
           SystemNavigator.pop();
         }
       },
       child: Scaffold(
-        body: Stack(
-          children: [
-            // Active Screen view
-            IndexedStack(
-              index: _currentIndex,
-              children: screens,
-            ),
-
-            // macOS Glassmorphic Floating Dock at Bottom Center
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: FloatingDock(
-                selectedIndex: _currentIndex,
-                onItemSelected: (index) {
-                  setState(() {
-                    _currentIndex = index;
-                  });
-                },
+        body: NotificationListener<UserScrollNotification>(
+          onNotification: (notification) {
+            if (notification.direction == ScrollDirection.reverse) {
+              if (_isNavVisible) {
+                setState(() => _isNavVisible = false);
+              }
+            } else if (notification.direction == ScrollDirection.forward) {
+              if (!_isNavVisible) {
+                setState(() => _isNavVisible = true);
+              }
+            }
+            return true;
+          },
+          child: Stack(
+            children: [
+              // Active Screen view
+              IndexedStack(
+                index: _currentIndex,
+                children: screens,
               ),
-            ),
-          ],
+
+              // Animated Auto-Hiding Glassmorphic Floating Dock
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: AnimatedSlide(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  offset: _isNavVisible ? Offset.zero : const Offset(0, 2.5),
+                  child: FloatingDock(
+                    selectedIndex: _currentIndex,
+                    onItemSelected: (index) {
+                      setState(() {
+                        _currentIndex = index;
+                        _isNavVisible = true;
+                      });
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

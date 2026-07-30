@@ -1,51 +1,72 @@
+import 'package:uuid/uuid.dart';
+
 class InventoryItem {
   final String id;
   final String name;
-  final double unitPrice;
+  final String unit; // NOS, PCS, KGS, BAG, WKS, MON, YRS, BAL, BOU, BTL, BOX
+  final String? secondaryUnit;
+  final double salePrice;
+  final double purchasePrice;
+  final bool taxIncluded;
+  final int openingStock;
   final int stockQuantity;
-  final String unit; // 'Pieces', 'Kg', 'Dozen', 'Set'
-  final double? weightKg;
-  final double gstRate; // 0, 5, 12, 18
+  final int lowStockAlert;
+  final String? hsn;
+  final double gstRate; // 0, 5, 12, 18, 28
+  final DateTime asOfDate;
   final String? category;
   final DateTime createdAt;
 
   InventoryItem({
-    required this.id,
+    String? id,
     required this.name,
-    required this.unitPrice,
-    required this.stockQuantity,
-    this.unit = 'Pieces',
-    this.weightKg,
+    this.unit = 'PCS',
+    this.secondaryUnit,
+    this.salePrice = 0.0,
+    this.purchasePrice = 0.0,
+    this.taxIncluded = false,
+    this.openingStock = 0,
+    int? stockQuantity,
+    this.lowStockAlert = 5,
+    this.hsn,
     this.gstRate = 5.0,
+    DateTime? asOfDate,
     this.category,
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+  })  : id = id ?? const Uuid().v4(),
+        stockQuantity = stockQuantity ?? openingStock,
+        asOfDate = asOfDate ?? DateTime.now(),
+        createdAt = createdAt ?? DateTime.now();
 
+  double get unitPrice => salePrice > 0 ? salePrice : (purchasePrice > 0 ? purchasePrice : 0.0);
   double get cgstRate => gstRate / 2;
   double get sgstRate => gstRate / 2;
 
   factory InventoryItem.fromJson(Map<String, dynamic> json) {
-    final String nameVal = (json['item_name']?.toString()) ?? (json['name']?.toString()) ?? 'Unnamed Item';
-    final double priceVal = double.tryParse(json['unit_price']?.toString() ?? '0') ?? 0.0;
-    
-    final String rawStockStr = json['stock_quantity']?.toString() ?? '0';
-    final int qtyVal = (double.tryParse(rawStockStr) ?? 0.0).toInt();
-
-    final String rawGstStr = (json['gst_rate']?.toString() ?? '5').replaceAll('%', '').trim();
-    final double gstVal = double.tryParse(rawGstStr) ?? 5.0;
-
-    final String dateStr = json['created_at']?.toString() ?? '';
+    final String nameVal = json['name']?.toString() ?? json['item_name']?.toString() ?? 'Unnamed Item';
+    final double saleP = double.tryParse(json['sale_price']?.toString() ?? json['unit_price']?.toString() ?? '0') ?? 0.0;
+    final double purchP = double.tryParse(json['purchase_price']?.toString() ?? '0') ?? 0.0;
+    final int opStock = (double.tryParse(json['opening_stock']?.toString() ?? '0') ?? 0.0).toInt();
+    final int curStock = (double.tryParse(json['stock_quantity']?.toString() ?? opStock.toString()) ?? opStock.toDouble()).toInt();
+    final int alertVal = (double.tryParse(json['low_stock_alert']?.toString() ?? '5') ?? 5.0).toInt();
+    final double gstVal = double.tryParse((json['gst_rate']?.toString() ?? '5').replaceAll('%', '').trim()) ?? 5.0;
 
     return InventoryItem(
-      id: json['id']?.toString() ?? 'ut_${DateTime.now().millisecondsSinceEpoch}',
+      id: json['id']?.toString() ?? const Uuid().v4(),
       name: nameVal,
-      unitPrice: priceVal,
-      stockQuantity: qtyVal,
-      unit: json['unit']?.toString() ?? 'Pieces',
-      weightKg: double.tryParse(json['weight_kg']?.toString() ?? ''),
+      unit: json['unit']?.toString() ?? 'PCS',
+      secondaryUnit: json['secondary_unit']?.toString(),
+      salePrice: saleP,
+      purchasePrice: purchP,
+      taxIncluded: json['tax_included'] == true,
+      openingStock: opStock,
+      stockQuantity: curStock,
+      lowStockAlert: alertVal,
+      hsn: json['hsn']?.toString(),
       gstRate: gstVal,
+      asOfDate: json['as_of_date'] != null ? (DateTime.tryParse(json['as_of_date'].toString()) ?? DateTime.now()) : DateTime.now(),
       category: json['category']?.toString() ?? 'General Utensils',
-      createdAt: dateStr.isNotEmpty ? (DateTime.tryParse(dateStr) ?? DateTime.now()) : DateTime.now(),
+      createdAt: json['created_at'] != null ? (DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()) : DateTime.now(),
     );
   }
 
@@ -53,12 +74,17 @@ class InventoryItem {
     return {
       'id': id,
       'name': name,
-      'item_name': name,
-      'unit_price': unitPrice,
-      'stock_quantity': stockQuantity,
       'unit': unit,
-      'weight_kg': weightKg,
+      'secondary_unit': secondaryUnit,
+      'sale_price': salePrice,
+      'purchase_price': purchasePrice,
+      'tax_included': taxIncluded,
+      'opening_stock': openingStock,
+      'stock_quantity': stockQuantity,
+      'low_stock_alert': lowStockAlert,
+      'hsn': hsn,
       'gst_rate': gstRate,
+      'as_of_date': asOfDate.toIso8601String(),
       'category': category,
       'created_at': createdAt.toIso8601String(),
     };
@@ -66,35 +92,71 @@ class InventoryItem {
 
   Map<String, dynamic> toSupabaseInsert(String userId) {
     return {
+      'id': id,
       'user_id': userId,
-      'item_name': name,
+      'name': name,
+      'unit': unit,
+      'sale_price': salePrice,
+      'purchase_price': purchasePrice,
+      'tax_included': taxIncluded,
+      'opening_stock': openingStock,
       'stock_quantity': stockQuantity,
-      'unit_price': unitPrice,
+      'low_stock_alert': lowStockAlert,
+      'hsn': hsn,
       'gst_rate': gstRate,
       'category': category ?? 'General Utensils',
       'created_at': createdAt.toIso8601String(),
     };
   }
 
+  Map<String, dynamic> toSupabaseUpdate(String userId) {
+    return {
+      'user_id': userId,
+      'name': name,
+      'unit': unit,
+      'sale_price': salePrice,
+      'purchase_price': purchasePrice,
+      'tax_included': taxIncluded,
+      'opening_stock': openingStock,
+      'stock_quantity': stockQuantity,
+      'low_stock_alert': lowStockAlert,
+      'hsn': hsn,
+      'gst_rate': gstRate,
+      'category': category ?? 'General Utensils',
+    };
+  }
+
   InventoryItem copyWith({
     String? id,
     String? name,
-    double? unitPrice,
-    int? stockQuantity,
     String? unit,
-    double? weightKg,
+    String? secondaryUnit,
+    double? salePrice,
+    double? purchasePrice,
+    bool? taxIncluded,
+    int? openingStock,
+    int? stockQuantity,
+    int? lowStockAlert,
+    String? hsn,
     double? gstRate,
+    DateTime? asOfDate,
     String? category,
     DateTime? createdAt,
   }) {
     return InventoryItem(
       id: id ?? this.id,
       name: name ?? this.name,
-      unitPrice: unitPrice ?? this.unitPrice,
-      stockQuantity: stockQuantity ?? this.stockQuantity,
       unit: unit ?? this.unit,
-      weightKg: weightKg ?? this.weightKg,
+      secondaryUnit: secondaryUnit ?? this.secondaryUnit,
+      salePrice: salePrice ?? this.salePrice,
+      purchasePrice: purchasePrice ?? this.purchasePrice,
+      taxIncluded: taxIncluded ?? this.taxIncluded,
+      openingStock: openingStock ?? this.openingStock,
+      stockQuantity: stockQuantity ?? this.stockQuantity,
+      lowStockAlert: lowStockAlert ?? this.lowStockAlert,
+      hsn: hsn ?? this.hsn,
       gstRate: gstRate ?? this.gstRate,
+      asOfDate: asOfDate ?? this.asOfDate,
       category: category ?? this.category,
       createdAt: createdAt ?? this.createdAt,
     );
