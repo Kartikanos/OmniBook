@@ -60,8 +60,8 @@ class ReportOfDateScreen extends StatelessWidget {
     final selectedDateBalance = dayCashIn - dayCashOut;
 
     // Overall total cash in hand vs online
-    double totalCashInHand = dbService.netCashBalance;
-    double overallTotalBalance = dbService.netCashBalance + dbService.baseOpeningBalance;
+    double totalCashInHand = dbService.closingBalance;
+    double overallTotalBalance = dbService.closingBalance + dbService.baseOpeningBalance;
 
     final headerTitle = 'Report of ${selectedDate.day} ${_getMonthName(selectedDate.month)}';
 

@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../models/cash_entry.dart';
 import '../services/database_service.dart';
-import 'daily_transactions_screen.dart';
 import 'report_of_date_screen.dart';
 
 class CashbookReportScreen extends StatefulWidget {
