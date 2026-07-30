@@ -258,11 +258,20 @@ class DatabaseService extends ChangeNotifier {
 
     // B) Fetch Inventory Items
     try {
-      final response = await _client
-          .from(AppConstants.inventoryTable)
-          .select()
-          .eq('user_id', userId)
-          .order('created_at', ascending: false);
+      dynamic response;
+      try {
+        response = await _client
+            .from('inventory_items')
+            .select()
+            .eq('user_id', userId)
+            .order('created_at', ascending: false);
+      } catch (e) {
+        response = await _client
+            .from('inventory')
+            .select()
+            .eq('user_id', userId)
+            .order('created_at', ascending: false);
+      }
 
       _inventoryItems = (response as List)
           .map((e) => InventoryItem.fromJson(e as Map<String, dynamic>))
@@ -712,27 +721,41 @@ class DatabaseService extends ChangeNotifier {
       if (!isGuest) {
         final userId = _client.auth.currentUser?.id;
         if (userId != null) {
+          final jsonMap = item.toSupabaseInsert(userId);
           try {
-            final jsonMap = item.toSupabaseInsert(userId);
             if (isEditing) {
-              print('--- ATTEMPTING SUPABASE INVENTORY UPDATE (id: ${item.id}) ---');
               await _client
-                  .from(AppConstants.inventoryTable)
+                  .from('inventory_items')
                   .update(jsonMap)
                   .eq('id', item.id);
-              print('--- SUCCESS! UPDATED INVENTORY ITEM: ${item.id} ---');
             } else {
-              print('--- ATTEMPTING SUPABASE INVENTORY INSERT ---');
               final response = await _client
-                  .from(AppConstants.inventoryTable)
+                  .from('inventory_items')
                   .insert(jsonMap)
                   .select();
-              print('--- SUCCESS! INSERTED INVENTORY ROW: $response ---');
+              print('--- SUCCESS! INSERTED INVENTORY_ITEMS ROW: $response ---');
             }
             await fetchInventoryItems(isGuest: isGuest);
           } catch (e) {
-            print('--- SUPABASE INVENTORY OFFLINE QUEUED: $e ---');
-            await _addToOfflineQueue(userId, 'inventory', item.toJson());
+            print('--- INVENTORY_ITEMS WRITE NOTICE, TRYING FALLBACK TABLE inventory: $e ---');
+            try {
+              if (isEditing) {
+                await _client
+                    .from('inventory')
+                    .update(jsonMap)
+                    .eq('id', item.id);
+              } else {
+                final response = await _client
+                    .from('inventory')
+                    .insert(jsonMap)
+                    .select();
+                print('--- SUCCESS! INSERTED FALLBACK INVENTORY ROW: $response ---');
+              }
+              await fetchInventoryItems(isGuest: isGuest);
+            } catch (err) {
+              print('--- SUPABASE INVENTORY OFFLINE QUEUED: $err ---');
+              await _addToOfflineQueue(userId, 'inventory_items', item.toJson());
+            }
           }
           await _saveToLocalCache(userId);
         }
@@ -751,11 +774,20 @@ class DatabaseService extends ChangeNotifier {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
     try {
-      final response = await _client
-          .from(AppConstants.inventoryTable)
-          .select()
-          .eq('user_id', userId)
-          .order('created_at', ascending: false);
+      dynamic response;
+      try {
+        response = await _client
+            .from('inventory_items')
+            .select()
+            .eq('user_id', userId)
+            .order('created_at', ascending: false);
+      } catch (e) {
+        response = await _client
+            .from('inventory')
+            .select()
+            .eq('user_id', userId)
+            .order('created_at', ascending: false);
+      }
 
       _inventoryItems = (response as List)
           .map((e) => InventoryItem.fromJson(e as Map<String, dynamic>))
@@ -778,12 +810,18 @@ class DatabaseService extends ChangeNotifier {
         if (userId != null) {
           try {
             await _client
-                .from(AppConstants.inventoryTable)
+                .from('inventory_items')
                 .delete()
                 .eq('id', itemId);
-            print('--- SUCCESS! DELETED INVENTORY ITEM: $itemId ---');
           } catch (e) {
-            print('--- SUPABASE INVENTORY DELETE ERROR: $e ---');
+            try {
+              await _client
+                  .from('inventory')
+                  .delete()
+                  .eq('id', itemId);
+            } catch (err) {
+              print('--- SUPABASE INVENTORY DELETE ERROR: $err ---');
+            }
           }
           await _saveToLocalCache(userId);
         }

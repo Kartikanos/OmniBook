@@ -65,8 +65,9 @@ class _AddPartyScreenState extends State<AddPartyScreen> {
     }
 
     try {
+      // Fetch lightweight contact list to prevent Android Binder timeouts
       final contacts = await FlutterContacts.getContacts(
-        withProperties: true,
+        withProperties: false,
         withPhoto: false,
       );
       if (!mounted) return;
@@ -77,21 +78,24 @@ class _AddPartyScreenState extends State<AddPartyScreen> {
         backgroundColor: Colors.transparent,
         builder: (ctx) => _ContactsPickerSheet(
           contacts: contacts,
-          onSelectContact: (contact) {
-            final name = contact.displayName;
+          onSelectContact: (selectedContact) async {
+            final fullContact = await FlutterContacts.getContact(selectedContact.id);
+            final name = fullContact?.displayName ?? selectedContact.displayName;
             String phone = '';
-            if (contact.phones.isNotEmpty) {
-              phone = contact.phones.first.number.replaceAll(RegExp(r'[^0-9]'), '');
+            if (fullContact != null && fullContact.phones.isNotEmpty) {
+              phone = fullContact.phones.first.number.replaceAll(RegExp(r'[^0-9]'), '');
               if (phone.length > 10) {
                 phone = phone.substring(phone.length - 10);
               }
             }
 
-            setState(() {
-              _nameController.text = name;
-              if (phone.isNotEmpty) _phoneController.text = phone;
-            });
-            Navigator.of(ctx).pop();
+            if (mounted) {
+              setState(() {
+                _nameController.text = name;
+                if (phone.isNotEmpty) _phoneController.text = phone;
+              });
+              Navigator.of(ctx).pop();
+            }
           },
         ),
       );
@@ -311,7 +315,7 @@ class _ContactsPickerSheetState extends State<_ContactsPickerSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final filtered = widget.contacts.where((c) {
       final name = c.displayName.toLowerCase();
-      final phone = c.phones.isNotEmpty ? c.phones.first.number : '';
+      final phone = (c.phones.isNotEmpty == true) ? c.phones.first.number : '';
       return name.contains(_searchQuery.toLowerCase()) || phone.contains(_searchQuery);
     }).toList();
 
@@ -339,7 +343,7 @@ class _ContactsPickerSheetState extends State<_ContactsPickerSheet> {
           const SizedBox(height: 12),
           TextField(
             decoration: InputDecoration(
-              hintText: 'Search contacts by name or number...',
+              hintText: 'Search contacts by name...',
               prefixIcon: const Icon(Icons.search_rounded),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             ),
@@ -354,7 +358,7 @@ class _ContactsPickerSheetState extends State<_ContactsPickerSheet> {
                     separatorBuilder: (ctx, idx) => const Divider(height: 1),
                     itemBuilder: (ctx, idx) {
                       final c = filtered[idx];
-                      final phone = c.phones.isNotEmpty ? c.phones.first.number : 'No number';
+                      final phone = (c.phones.isNotEmpty == true) ? c.phones.first.number : 'Tap to select';
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: AppConstants.primaryColor.withOpacity(0.15),
