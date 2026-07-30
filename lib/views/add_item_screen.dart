@@ -33,11 +33,25 @@ class _AddItemScreenState extends State<AddItemScreen> {
   bool _isExempt = false;
   DateTime _asOfDate = DateTime.now();
 
-  final List<String> _units = [
-    'NOS', 'PCS', 'KGS', 'BAG', 'WKS', 'MON', 'YRS', 'BAL', 'BOU', 'BTL', 'BOX'
+  final Map<String, String> _unitDisplayNames = const {
+    'NOS': 'Numbers (NOS)',
+    'PCS': 'Pieces (PCS)',
+    'KGS': 'Kilograms (KGS)',
+    'BAG': 'Bags (BAG)',
+    'BOX': 'Boxes (BOX)',
+    'BTL': 'Bottles (BTL)',
+    'MON': 'Months (MON)',
+    'YRS': 'Years (YRS)',
+    'WKS': 'Weeks (WKS)',
+    'BAL': 'Bales (BAL)',
+    'BOU': 'Bouquet (BOU)',
+  };
+
+  final List<String> _units = const [
+    'NOS', 'PCS', 'KGS', 'BAG', 'BOX', 'BTL', 'MON', 'YRS', 'WKS', 'BAL', 'BOU'
   ];
 
-  final List<double> _gstRates = [0.0, 5.0, 12.0, 18.0, 28.0];
+  final List<double> _gstRates = const [0.0, 5.0, 12.0, 18.0, 28.0];
 
   @override
   void initState() {
@@ -81,7 +95,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
         builder: (context, setModalState) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           final filteredUnits = _units
-              .where((u) => u.toLowerCase().contains(searchQuery.toLowerCase()))
+              .where((u) {
+                final display = _unitDisplayNames[u] ?? u;
+                return display.toLowerCase().contains(searchQuery.toLowerCase());
+              })
               .toList();
 
           return Container(
@@ -99,7 +116,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                     width: 40, height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.3),
+                      color: Colors.grey.withValues(alpha: 0.3),
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -111,7 +128,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 const SizedBox(height: 12),
                 TextField(
                   decoration: InputDecoration(
-                    hintText: 'Search Unit (e.g. PCS, KGS, BOX)',
+                    hintText: 'Search Unit (e.g. Pieces, Kilograms, Box)',
                     prefixIcon: const Icon(Icons.search_rounded),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -124,9 +141,10 @@ class _AddItemScreenState extends State<AddItemScreen> {
                     separatorBuilder: (ctx, idx) => const Divider(height: 1),
                     itemBuilder: (ctx, idx) {
                       final unit = filteredUnits[idx];
+                      final displayName = _unitDisplayNames[unit] ?? unit;
                       final isSelected = isSecondary ? _secondaryUnit == unit : _selectedUnit == unit;
                       return ListTile(
-                        title: Text(unit, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        title: Text(displayName, style: const TextStyle(fontWeight: FontWeight.bold)),
                         trailing: isSelected
                             ? const Icon(Icons.check_circle_rounded, color: AppConstants.primaryColor)
                             : null,
@@ -242,7 +260,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                       icon: const Icon(Icons.straighten_rounded, size: 18),
-                      label: Text('Unit: $_selectedUnit', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      label: Text('Unit: ${_unitDisplayNames[_selectedUnit] ?? _selectedUnit}', style: const TextStyle(fontWeight: FontWeight.bold)),
                       onPressed: () => _showUnitPickerModal(isSecondary: false),
                     ),
                   ),
@@ -252,7 +270,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       const Text('Secondary Unit', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                       Switch(
                         value: _enableSecondaryUnit,
-                        activeColor: AppConstants.primaryColor,
+                        activeThumbColor: AppConstants.primaryColor,
                         onChanged: (val) {
                           setState(() {
                             _enableSecondaryUnit = val;
@@ -274,7 +292,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                  label: Text('Secondary Unit: ${_secondaryUnit ?? "PCS"}'),
+                  label: Text('Secondary Unit: ${_unitDisplayNames[_secondaryUnit] ?? _secondaryUnit ?? "PCS"}'),
                   onPressed: () => _showUnitPickerModal(isSecondary: true),
                 ),
               ],

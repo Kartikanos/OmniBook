@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../services/theme_service.dart';
 import '../services/biometric_service.dart';
+import 'privacy_policy_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -434,6 +435,18 @@ class SettingsScreen extends StatelessWidget {
                       subtitle: const Text('Update login password'),
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () => _showChangePasswordDialog(context),
+                    ),
+                    const Divider(height: 1, indent: 16, endIndent: 16),
+                    ListTile(
+                      leading: const Icon(Icons.privacy_tip_rounded, color: AppConstants.primaryColor),
+                      title: const Text('Privacy Policy & DPDP Compliance'),
+                      subtitle: const Text('Read DPDP Act 2023 compliance & contact rights'),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (ctx) => const PrivacyPolicyScreen()),
+                        );
+                      },
                     ),
                     const Divider(height: 1, indent: 16, endIndent: 16),
                     ListTile(

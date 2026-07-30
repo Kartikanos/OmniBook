@@ -9,6 +9,7 @@ import '../services/auth_service.dart';
 import '../widgets/cash_entry_modal.dart';
 import '../widgets/shimmer_loader.dart';
 import 'cashbook_report_screen.dart';
+import 'edit_cash_entry_screen.dart';
 
 enum _DateMode { all, singleDate, customMonth, customRange }
 
@@ -794,7 +795,16 @@ class _CashbookScreenState extends State<CashbookScreen> {
                                 final color = isCashIn ? AppConstants.cashInColor : AppConstants.cashOutColor;
 
                                 return GestureDetector(
-                                  onLongPress: () => _showEditCashEntryDialog(context, entry),
+                                  onTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(builder: (ctx) => EditCashEntryScreen(entry: entry)),
+                                    );
+                                  },
+                                  onLongPress: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(builder: (ctx) => EditCashEntryScreen(entry: entry)),
+                                    );
+                                  },
                                   child: Card(
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
@@ -804,7 +814,11 @@ class _CashbookScreenState extends State<CashbookScreen> {
                                     ),
                                     child: ListTile(
                                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                      onLongPress: () => _showEditCashEntryDialog(context, entry),
+                                      onTap: () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(builder: (ctx) => EditCashEntryScreen(entry: entry)),
+                                        );
+                                      },
                                       leading: Container(
                                         padding: const EdgeInsets.all(10),
                                         decoration: BoxDecoration(

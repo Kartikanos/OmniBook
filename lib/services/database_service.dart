@@ -729,6 +729,7 @@ class DatabaseService extends ChangeNotifier {
                   .select();
               print('--- SUCCESS! INSERTED INVENTORY ROW: $response ---');
             }
+            await fetchInventoryItems(isGuest: isGuest);
           } catch (e) {
             print('--- SUPABASE INVENTORY OFFLINE QUEUED: $e ---');
             await _addToOfflineQueue(userId, 'inventory', item.toJson());
@@ -742,6 +743,27 @@ class DatabaseService extends ChangeNotifier {
       print('Add inventory item failed: $e');
       _errorMessage = 'Failed to add item to inventory.';
       return null;
+    }
+  }
+
+  Future<void> fetchInventoryItems({bool isGuest = false}) async {
+    if (isGuest) return;
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      final response = await _client
+          .from(AppConstants.inventoryTable)
+          .select()
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+
+      _inventoryItems = (response as List)
+          .map((e) => InventoryItem.fromJson(e as Map<String, dynamic>))
+          .toList();
+      _deduplicateInventory();
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) print('FETCH INVENTORY ERROR: $e');
     }
   }
 

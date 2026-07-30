@@ -12,10 +12,12 @@ import '../services/auth_service.dart';
 
 class CashEntryModal extends StatefulWidget {
   final CashEntryType entryType;
+  final DateTime? initialDate;
 
   const CashEntryModal({
     super.key,
     required this.entryType,
+    this.initialDate,
   });
 
   @override
@@ -159,7 +161,7 @@ class _CashEntryModalState extends State<CashEntryModal> {
       title: entryTitle.isNotEmpty ? entryTitle : _selectedCategory,
       partyId: _selectedParty?.id,
       amount: amount,
-      date: DateTime.now(),
+      date: widget.initialDate ?? DateTime.now(),
     );
 
     try {

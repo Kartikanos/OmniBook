@@ -5,6 +5,7 @@ import '../core/constants.dart';
 import '../models/cash_entry.dart';
 import '../services/database_service.dart';
 import 'daily_transactions_screen.dart';
+import 'report_of_date_screen.dart';
 
 class CashbookReportScreen extends StatefulWidget {
   const CashbookReportScreen({super.key});
@@ -311,7 +312,7 @@ class _CashbookReportScreenState extends State<CashbookReportScreen> {
                               onTap: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (ctx) => DailyTransactionsScreen(date: d),
+                                    builder: (ctx) => ReportOfDateScreen(selectedDate: d),
                                   ),
                                 );
                               },

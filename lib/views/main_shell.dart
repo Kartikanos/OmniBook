@@ -57,6 +57,7 @@ class _MainShellState extends State<MainShell> {
         onOpenBilling: () => _openPage(const GstBillingScreen()),
         onOpenStaff: () => _openPage(const StaffManagerScreen()),
         onOpenReports: () => _openPage(const ReportsScreen()),
+        onOpenSettings: () => _openPage(const SettingsScreen()),
       ),
       const CashbookScreen(),
       const InventoryScreen(),
