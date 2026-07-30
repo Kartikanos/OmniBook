@@ -41,7 +41,6 @@ class _PartiesScreenState extends State<PartiesScreen> {
     final formKey = GlobalKey<FormState>();
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
-    final addressCtrl = TextEditingController();
     final balCtrl = TextEditingController(text: '0');
     PartyType selectedType = PartyType.customer;
 
@@ -80,11 +79,6 @@ class _PartiesScreenState extends State<PartiesScreen> {
                       if (v.trim().length != 10) return 'Phone number must be exactly 10 digits';
                       return null;
                     },
-                  ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    controller: addressCtrl,
-                    decoration: const InputDecoration(labelText: 'Address / Location'),
                   ),
                   const SizedBox(height: 14),
                   const Text('Party Type:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
@@ -133,10 +127,8 @@ class _PartiesScreenState extends State<PartiesScreen> {
                   final authService = Provider.of<AuthService>(context, listen: false);
 
                   final newParty = Party(
-                    id: 'pty_${DateTime.now().millisecondsSinceEpoch}',
                     name: nameCtrl.text.trim(),
                     phone: phoneCtrl.text.trim(),
-                    address: addressCtrl.text.trim().isNotEmpty ? addressCtrl.text.trim() : null,
                     type: selectedType,
                     openingBalance: double.tryParse(balCtrl.text.trim()) ?? 0.0,
                   );
@@ -622,7 +614,7 @@ class _PartyLedgerDetailSheetState extends State<_PartyLedgerDetailSheet> {
                             color: col,
                           ),
                           title: Text(
-                            entry.itemName ?? entry.category,
+                            entry.title,
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                           ),
                           subtitle: Text(

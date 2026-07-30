@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 import '../core/constants.dart';
 import '../core/supabase_config.dart';
 import '../models/user_model.dart';
@@ -239,11 +240,11 @@ class DatabaseService extends ChangeNotifier {
 
     // Step 2: Fetch each table in distinct, isolated try-catch blocks so one table error never breaks others!
 
-    // A) Fetch CashBook Entries (columns guaranteed in cashbook_entries table)
+    // A) Fetch CashBook Entries (schema truth: id, user_id, title, amount, type, category, party_id, created_at)
     try {
       final response = await _client
           .from(AppConstants.cashEntriesTable)
-          .select('id, user_id, title, amount, type, category, party_id, notes, created_at')
+          .select('id, user_id, title, amount, type, category, party_id, created_at')
           .eq('user_id', userId)
           .order('created_at', ascending: false);
 
@@ -271,11 +272,11 @@ class DatabaseService extends ChangeNotifier {
       print('INVENTORY FETCH ERROR: $e');
     }
 
-    // C) Fetch Ledgers / Parties
+    // C) Fetch Ledgers / Parties (schema truth: id, user_id, name, phone, party_type, opening_balance, current_balance, created_at)
     try {
       final response = await _client
           .from(AppConstants.ledgersTable)
-          .select()
+          .select('id, user_id, name, phone, party_type, opening_balance, current_balance, created_at')
           .eq('user_id', userId)
           .order('created_at', ascending: false);
 
@@ -316,7 +317,7 @@ class DatabaseService extends ChangeNotifier {
           final d = dStr.isNotEmpty ? (DateTime.tryParse(dStr) ?? DateTime.now()) : DateTime.now();
 
           return AttendanceRecord(
-            id: e['id']?.toString() ?? 'att_${e['staff_id']}_$dStr',
+            id: e['id']?.toString() ?? const Uuid().v4(),
             staffId: e['staff_id']?.toString() ?? '',
             date: d,
             status: st,
@@ -328,28 +329,20 @@ class DatabaseService extends ChangeNotifier {
       print('WORKER ATTENDANCE FETCH NOTICE: $e');
     }
 
-    // E) Fetch Workers from Supabase (graceful fallback to empty list if table doesn't exist)
+    // E) Fetch Workers from Supabase (schema truth: id, user_id, name, phone, daily_salary, is_active, created_at)
     try {
       final workersResponse = await _client
           .from('workers')
-          .select()
+          .select('id, user_id, name, phone, daily_salary, is_active, created_at')
           .eq('user_id', userId)
           .order('created_at', ascending: false);
 
-      _staffMembers = (workersResponse as List).map((e) {
-        return StaffMember(
-          id: e['id']?.toString() ?? '',
-          name: e['name']?.toString() ?? '',
-          phone: e['phone']?.toString() ?? '',
-          designation: e['designation']?.toString() ?? '',
-          dailyWage: (e['daily_wage'] as num?)?.toDouble() ?? 0.0,
-        );
-      }).toList();
+      _staffMembers = (workersResponse as List)
+          .map((e) => StaffMember.fromJson(e as Map<String, dynamic>))
+          .toList();
       print('SUCCESSFULLY LOADED ${_staffMembers.length} WORKER ROWS');
     } catch (e) {
-      // Table may not exist yet — fall back to empty list for real users
-      _staffMembers = [];
-      print('WORKERS FETCH NOTICE (table may not exist): $e');
+      print('WORKERS FETCH NOTICE: $e');
     }
 
     // Step 3: Save fresh state to local SharedPreferences cache & process any pending offline items
@@ -441,13 +434,16 @@ class DatabaseService extends ChangeNotifier {
   // Add Cash Entry (Cash In / Cash Out) with explicit debug logging
   Future<bool> addCashEntry(CashEntry entry, {bool isGuest = false}) async {
     try {
-      // 1. Dynamic Title Formatting for Party Payments
-      String? formattedName = entry.itemName;
-      if (entry.partyName != null && entry.partyName!.isNotEmpty) {
-        if (entry.category == 'Party Payment' || formattedName == null || formattedName.trim().isEmpty) {
-          formattedName = entry.type == CashEntryType.cashIn
-              ? 'Received from ${entry.partyName}'
-              : 'Paid to ${entry.partyName}';
+      String formattedTitle = entry.title;
+      if (entry.category == 'Party Payment' || formattedTitle.trim().isEmpty) {
+        if (entry.partyId != null && entry.partyId!.isNotEmpty) {
+          final pIndex = _parties.indexWhere((p) => p.id == entry.partyId);
+          if (pIndex != -1) {
+            final pName = _parties[pIndex].name;
+            formattedTitle = entry.type == CashEntryType.cashIn
+                ? 'Received from $pName'
+                : 'Paid to $pName';
+          }
         }
       }
 
@@ -455,18 +451,10 @@ class DatabaseService extends ChangeNotifier {
         id: entry.id,
         type: entry.type,
         category: entry.category,
-        itemId: entry.itemId,
-        itemName: formattedName,
+        title: formattedTitle,
         partyId: entry.partyId,
-        partyName: entry.partyName,
         amount: entry.amount,
-        quantity: entry.quantity,
-        unitPrice: entry.unitPrice,
-        gstRate: entry.gstRate,
-        gstAmount: entry.gstAmount,
-        invoiceNo: entry.invoiceNo,
         date: entry.date,
-        notes: entry.notes,
       );
 
       // Optimistic local insertion
@@ -849,17 +837,13 @@ class DatabaseService extends ChangeNotifier {
 
       // Create Cash Entry
       final cashEntry = CashEntry(
-        id: 'cash_inv_${invoice.id}',
+        id: const Uuid().v4(),
         type: CashEntryType.cashIn,
         category: 'Item Sale',
         partyId: invoice.partyId,
-        partyName: invoice.partyName,
+        title: 'GST Invoice #${invoice.invoiceNo} generated',
         amount: invoice.grandTotal,
-        quantity: invoice.items.fold(0, (sum, i) => sum + i.quantity),
-        gstAmount: invoice.totalGst,
-        invoiceNo: invoice.invoiceNo,
         date: invoice.date,
-        notes: 'GST Invoice #${invoice.invoiceNo} generated',
       );
 
       await addCashEntry(cashEntry, isGuest: isGuest);
@@ -897,16 +881,7 @@ class DatabaseService extends ChangeNotifier {
         final userId = _client.auth.currentUser?.id;
         if (userId != null) {
           try {
-            // Send only columns that are guaranteed in the workers table.
-            // 'daily_salary' may be named 'daily_wage' — try both by sending daily_wage.
-            // Remove any column that doesn't exist to prevent 42703 errors.
-            await _client.from('workers').upsert({
-              'id': staff.id,
-              'user_id': userId,
-              'name': staff.name,
-              'phone': staff.phone,
-              'daily_wage': staff.dailyWage,   // column name in Supabase workers table
-            });
+            await _client.from('workers').upsert(staff.toSupabaseInsert(userId));
             print('--- SUCCESS! UPSERTED WORKER TO SUPABASE: ${staff.name} ---');
           } catch (e) {
             print('SUPABASE WORKER UPSERT NOTICE: $e');
@@ -1136,28 +1111,25 @@ class DatabaseService extends ChangeNotifier {
   List<Party> _defaultSampleParties() {
     return [
       Party(
-        id: 'pty_1',
+        id: const Uuid().v4(),
         name: 'Ramesh Hardware & Steel Store',
         phone: '9876543210',
-        address: 'Main Market, Retail Hub, Delhi',
         type: PartyType.customer,
         openingBalance: 14500.00,
         currentBalance: 14500.00,
       ),
       Party(
-        id: 'pty_2',
+        id: const Uuid().v4(),
         name: 'Gupta Utensil Udyog',
         phone: '9812345678',
-        address: 'Industrial Area, Phase 2, Moradabad',
         type: PartyType.supplier,
         openingBalance: -28000.00,
         currentBalance: -28000.00,
       ),
       Party(
-        id: 'pty_3',
+        id: const Uuid().v4(),
         name: 'Janta Metal Works',
         phone: '9711223344',
-        address: 'Station Road, Wholesale Market, Jaipur',
         type: PartyType.both,
         openingBalance: 5200.00,
         currentBalance: 5200.00,
@@ -1169,48 +1141,28 @@ class DatabaseService extends ChangeNotifier {
     final now = DateTime.now();
     return [
       CashEntry(
-        id: 'cash_1',
+        id: const Uuid().v4(),
         type: CashEntryType.cashIn,
         category: 'Item Sale',
-        itemId: 'ut_2',
-        itemName: 'Brass Jug Premium 1.5L',
-        partyId: 'pty_1',
-        partyName: 'Ramesh Hardware & Steel Store',
+        title: 'Brass Jug Premium 1.5L',
         amount: 3250.00,
-        quantity: 5,
-        unitPrice: 650.00,
-        gstRate: 12.0,
-        gstAmount: 390.00,
-        invoiceNo: 'INV-1001',
         date: now,
-        notes: 'Sold 5 pcs Brass Jug with 12% GST',
       ),
       CashEntry(
-        id: 'cash_2',
+        id: const Uuid().v4(),
         type: CashEntryType.cashOut,
         category: 'Party Payment',
-        partyId: 'pty_2',
-        partyName: 'Gupta Utensil Udyog',
+        title: 'Paid to Gupta Utensil Udyog',
         amount: 15000.00,
         date: now.subtract(const Duration(hours: 3)),
-        notes: 'Advance vendor payment via NEFT',
       ),
       CashEntry(
-        id: 'cash_3',
+        id: const Uuid().v4(),
         type: CashEntryType.cashIn,
         category: 'Item Sale',
-        itemId: 'ut_4',
-        itemName: 'Stainless Steel Thali Set (6-pc)',
-        partyId: 'pty_3',
-        partyName: 'Janta Metal Works',
+        title: 'Stainless Steel Thali Set (6-pc)',
         amount: 4500.00,
-        quantity: 10,
-        unitPrice: 450.00,
-        gstRate: 5.0,
-        gstAmount: 225.00,
-        invoiceNo: 'INV-1002',
         date: now.subtract(const Duration(days: 1)),
-        notes: 'Bulk sale 10 sets Thali',
       ),
     ];
   }

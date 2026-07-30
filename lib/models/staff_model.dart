@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 enum AttendanceStatus { present, absent, halfDay, terminated }
 
 class AttendanceRecord {
@@ -7,11 +9,11 @@ class AttendanceRecord {
   final AttendanceStatus status;
 
   AttendanceRecord({
-    required this.id,
+    String? id,
     required this.staffId,
     required this.date,
     required this.status,
-  });
+  }) : id = id ?? const Uuid().v4();
 
   factory AttendanceRecord.fromJson(Map<String, dynamic> json) {
     final rawSt = json['status']?.toString().toUpperCase() ?? '';
@@ -23,7 +25,7 @@ class AttendanceRecord {
     final dStr = json['date']?.toString() ?? json['created_at']?.toString() ?? '';
 
     return AttendanceRecord(
-      id: json['id']?.toString() ?? 'att_${DateTime.now().millisecondsSinceEpoch}',
+      id: json['id']?.toString() ?? const Uuid().v4(),
       staffId: json['staff_id']?.toString() ?? '',
       date: dStr.isNotEmpty ? (DateTime.tryParse(dStr) ?? DateTime.now()) : DateTime.now(),
       status: st,
@@ -49,31 +51,37 @@ class StaffMember {
   final String id;
   final String name;
   final String phone;
-  final String designation; // e.g. 'Polisher', 'Helper', 'Sales Associate', 'Store Manager'
+  final String designation; // e.g. 'Polisher', 'Helper', 'Sales Associate'
   final double dailyWage;
-  final bool isTerminated;
-  final String paymentTerms; // e.g. 'Daily', 'Weekly', 'Monthly'
+  final bool isActive;
+  final String paymentTerms;
   final DateTime createdAt;
 
   StaffMember({
-    required this.id,
+    String? id,
     required this.name,
     required this.phone,
-    required this.designation,
+    this.designation = 'Worker',
     required this.dailyWage,
-    this.isTerminated = false,
+    this.isActive = true,
     this.paymentTerms = 'Daily',
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+  })  : id = id ?? const Uuid().v4(),
+        createdAt = createdAt ?? DateTime.now();
+
+  bool get isTerminated => !isActive;
+  double get dailySalary => dailyWage;
 
   factory StaffMember.fromJson(Map<String, dynamic> json) {
+    final bool active = json['is_active'] == null ? (json['is_terminated'] != true) : (json['is_active'] == true);
+
     return StaffMember(
-      id: json['id']?.toString() ?? 'stf_${DateTime.now().millisecondsSinceEpoch}',
+      id: json['id']?.toString() ?? const Uuid().v4(),
       name: json['name']?.toString() ?? 'Unnamed Worker',
       phone: json['phone']?.toString() ?? '',
       designation: json['designation']?.toString() ?? 'Worker',
-      dailyWage: double.tryParse(json['daily_wage']?.toString() ?? json['salary_amount']?.toString() ?? '0') ?? 0.0,
-      isTerminated: json['is_terminated'] == true || json['status'] == 'terminated',
+      dailyWage: double.tryParse(json['daily_salary']?.toString() ?? json['daily_wage']?.toString() ?? '0') ?? 0.0,
+      isActive: active,
       paymentTerms: json['payment_terms']?.toString() ?? 'Daily',
       createdAt: json['created_at'] != null
           ? (DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now())
@@ -87,10 +95,34 @@ class StaffMember {
       'name': name,
       'phone': phone,
       'designation': designation,
+      'daily_salary': dailyWage,
       'daily_wage': dailyWage,
-      'is_terminated': isTerminated,
+      'is_active': isActive,
+      'is_terminated': !isActive,
       'payment_terms': paymentTerms,
       'created_at': createdAt.toIso8601String(),
+    };
+  }
+
+  Map<String, dynamic> toSupabaseInsert(String userId) {
+    return {
+      'id': id,
+      'user_id': userId,
+      'name': name,
+      'phone': phone,
+      'daily_salary': dailyWage,
+      'is_active': isActive,
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
+
+  Map<String, dynamic> toSupabaseUpdate(String userId) {
+    return {
+      'user_id': userId,
+      'name': name,
+      'phone': phone,
+      'daily_salary': dailyWage,
+      'is_active': isActive,
     };
   }
 
@@ -100,7 +132,7 @@ class StaffMember {
     String? phone,
     String? designation,
     double? dailyWage,
-    bool? isTerminated,
+    bool? isActive,
     String? paymentTerms,
     DateTime? createdAt,
   }) {
@@ -110,7 +142,7 @@ class StaffMember {
       phone: phone ?? this.phone,
       designation: designation ?? this.designation,
       dailyWage: dailyWage ?? this.dailyWage,
-      isTerminated: isTerminated ?? this.isTerminated,
+      isActive: isActive ?? this.isActive,
       paymentTerms: paymentTerms ?? this.paymentTerms,
       createdAt: createdAt ?? this.createdAt,
     );

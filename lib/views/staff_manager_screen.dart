@@ -105,7 +105,7 @@ class _StaffManagerScreenState extends State<StaffManagerScreen>
                 final authService = Provider.of<AuthService>(context, listen: false);
 
                 final updatedStaff = StaffMember(
-                  id: existingStaff?.id ?? 'stf_${DateTime.now().millisecondsSinceEpoch}',
+                  id: existingStaff?.id,
                   name: nameCtrl.text.trim(),
                   phone: phoneCtrl.text.trim(),
                   designation: desigCtrl.text.trim(),
@@ -402,6 +402,7 @@ class _StaffManagerScreenState extends State<StaffManagerScreen>
                                                   );
                                                   if (confirm == true && context.mounted) {
                                                     await dbService.deleteStaffMember(staff.id, isGuest: authService.isGuestMode);
+                                                    if (context.mounted) setState(() {});
                                                   }
                                                 },
                                               ),

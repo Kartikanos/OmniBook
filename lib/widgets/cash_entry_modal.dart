@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print, deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 import '../core/constants.dart';
 import '../core/supabase_config.dart';
 import '../models/cash_entry.dart';
@@ -33,8 +34,6 @@ class _CashEntryModalState extends State<CashEntryModal> {
   final TextEditingController _unitPriceController = TextEditingController();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
-
-  InventoryItem? _selectedItem;
 
   bool get _isItemCategory =>
       _selectedCategory == 'Item Sale' ||
@@ -83,7 +82,7 @@ class _CashEntryModalState extends State<CashEntryModal> {
     final double amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
     final int qty = int.tryParse(_quantityController.text.trim()) ?? 1;
     final double unitPrice = double.tryParse(_unitPriceController.text.trim()) ?? 0.0;
-    final String itemName = _itemNameController.text.trim();
+    final String inputName = _itemNameController.text.trim();
 
     // Check user auth state
     final currentUser = SupabaseConfig.client.auth.currentUser;
@@ -97,28 +96,20 @@ class _CashEntryModalState extends State<CashEntryModal> {
       return;
     }
 
-    print('--- ATTEMPTING SUPABASE INSERT ---');
-    print('User ID: ${currentUser?.id ?? "GUEST_MODE"}');
-    print('Transaction Type: ${widget.entryType == CashEntryType.cashIn ? "CASH_IN" : "CASH_OUT"}');
-    print('Category: $_selectedCategory');
-    print('Amount: $amount');
-
-    // Check if category is Item Sale or Item Purchase and item is new
-    if (_isItemCategory && itemName.isNotEmpty) {
-      final existingItems = dbService.searchInventory(itemName);
+    if (_isItemCategory && inputName.isNotEmpty) {
+      final existingItems = dbService.searchInventory(inputName);
       final exactMatch = existingItems.firstWhere(
-        (i) => i.name.toLowerCase() == itemName.toLowerCase(),
+        (i) => i.name.toLowerCase() == inputName.toLowerCase(),
         orElse: () => InventoryItem(id: '', name: '', unitPrice: 0, stockQuantity: 0),
       );
 
       if (exactMatch.id.isEmpty) {
-        // AUTOMATIC UTENSIL INVENTORY PROMPT
         final bool? shouldAddToInventory = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
             title: const Text('Add to Stock Inventory?'),
             content: Text(
-              'Do you want to add "$itemName" to your utensils stock inventory?',
+              'Do you want to add "$inputName" to your utensils stock inventory?',
               style: const TextStyle(fontSize: 15),
             ),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -142,34 +133,33 @@ class _CashEntryModalState extends State<CashEntryModal> {
 
         if (shouldAddToInventory == true) {
           final newItem = InventoryItem(
-            id: 'ut_${DateTime.now().millisecondsSinceEpoch}',
-            name: itemName,
+            id: const Uuid().v4(),
+            name: inputName,
             unitPrice: unitPrice > 0 ? unitPrice : (amount / (qty > 0 ? qty : 1)),
             stockQuantity: widget.entryType == CashEntryType.cashIn ? 0 : qty,
             unit: 'Pieces',
             category: 'General Utensils',
           );
           await dbService.addInventoryItem(newItem, isGuest: isGuest);
-          _selectedItem = newItem;
         }
-      } else {
-        _selectedItem = exactMatch;
       }
     }
 
+    String entryTitle = inputName;
+    if (_selectedParty != null && (entryTitle.isEmpty || _selectedCategory == 'Party Payment')) {
+      entryTitle = widget.entryType == CashEntryType.cashIn
+          ? 'Received from ${_selectedParty!.name}'
+          : 'Paid to ${_selectedParty!.name}';
+    }
+
     final entry = CashEntry(
-      id: 'cash_${DateTime.now().millisecondsSinceEpoch}',
+      id: const Uuid().v4(),
       type: widget.entryType,
       category: _selectedCategory,
-      itemId: _selectedItem?.id,
-      itemName: itemName.isNotEmpty ? itemName : null,
+      title: entryTitle.isNotEmpty ? entryTitle : _selectedCategory,
       partyId: _selectedParty?.id,
-      partyName: _selectedParty?.name,
       amount: amount,
-      quantity: qty,
-      unitPrice: unitPrice,
       date: DateTime.now(),
-      notes: _notesController.text.trim().isNotEmpty ? _notesController.text.trim() : null,
     );
 
     try {
@@ -177,11 +167,11 @@ class _CashEntryModalState extends State<CashEntryModal> {
       if (mounted) {
         if (success) {
           print('--- SUCCESS! CASH TRANSACTION SAVED ---');
-          Navigator.of(context).pop(); // Close sheet only after successful DB save
+          Navigator.of(context).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${widget.entryType == CashEntryType.cashIn ? "Cash In (+) [Item Sale]" : "Cash Out (-) [Item Purchase]"} recorded: ${AppConstants.formatCurrency(amount)}',
+                '${widget.entryType == CashEntryType.cashIn ? "Cash In (+)" : "Cash Out (-)"} recorded: ${AppConstants.formatCurrency(amount)}',
               ),
               backgroundColor: widget.entryType == CashEntryType.cashIn
                   ? AppConstants.cashInColor
@@ -370,7 +360,6 @@ class _CashEntryModalState extends State<CashEntryModal> {
                   },
                   onSelected: (InventoryItem selection) {
                     setState(() {
-                      _selectedItem = selection;
                       _itemNameController.text = selection.name;
                       _unitPriceController.text = selection.unitPrice.toStringAsFixed(2);
                       _calculateTotal();

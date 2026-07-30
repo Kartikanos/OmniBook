@@ -60,7 +60,7 @@ class _CashbookScreenState extends State<CashbookScreen> {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final titleCtrl = TextEditingController(text: entry.itemName ?? entry.category);
+    final titleCtrl = TextEditingController(text: entry.title);
     final amountCtrl = TextEditingController(text: entry.amount.toStringAsFixed(2));
     final notesCtrl = TextEditingController(text: entry.notes ?? '');
     DateTime editDate = entry.date;
@@ -110,7 +110,7 @@ class _CashbookScreenState extends State<CashbookScreen> {
                           context: context,
                           builder: (c) => AlertDialog(
                             title: const Text('Delete Entry?'),
-                            content: Text('Remove "${entry.itemName ?? entry.category}" permanently?'),
+                            content: Text('Remove "${entry.title}" permanently?'),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             actions: [
                               TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
@@ -201,17 +201,10 @@ class _CashbookScreenState extends State<CashbookScreen> {
                         id: entry.id,
                         type: entry.type,
                         category: selectedCategory,
-                        itemName: titleCtrl.text.trim().isNotEmpty ? titleCtrl.text.trim() : null,
+                        title: titleCtrl.text.trim().isNotEmpty ? titleCtrl.text.trim() : selectedCategory,
                         partyId: entry.partyId,
-                        partyName: entry.partyName,
                         amount: newAmount,
-                        quantity: entry.quantity,
-                        unitPrice: entry.unitPrice,
-                        gstRate: entry.gstRate,
-                        gstAmount: entry.gstAmount,
-                        invoiceNo: entry.invoiceNo,
                         date: editDate,
-                        notes: notesCtrl.text.trim().isNotEmpty ? notesCtrl.text.trim() : null,
                       );
 
                       await dbService.updateCashEntry(updated, isGuest: authService.isGuestMode);
@@ -426,7 +419,7 @@ class _CashbookScreenState extends State<CashbookScreen> {
       if (_filterType == 'Cash In' && entry.type != CashEntryType.cashIn) return false;
       if (_filterType == 'Cash Out' && entry.type != CashEntryType.cashOut) return false;
       if (query.isNotEmpty) {
-        final title = (entry.itemName ?? entry.category).toLowerCase();
+        final title = entry.title.toLowerCase();
         final notes = (entry.notes ?? '').toLowerCase();
         return title.contains(query) || notes.contains(query);
       }
@@ -810,7 +803,7 @@ class _CashbookScreenState extends State<CashbookScreen> {
                                         ),
                                       ),
                                       title: Text(
-                                        entry.itemName ?? entry.category,
+                                        entry.title,
                                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                       ),
                                       subtitle: Column(
