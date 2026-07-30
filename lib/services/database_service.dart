@@ -825,6 +825,7 @@ class DatabaseService extends ChangeNotifier {
             if ((response as List).isNotEmpty) {
               savedParty = Party.fromJson(response.first);
             }
+            await fetchParties(isGuest: isGuest);
           } catch (e) {
             print('--- SUPABASE LEDGER OFFLINE QUEUED: $e ---');
             await _addToOfflineQueue(userId, 'ledgers', party.toJson());
@@ -849,6 +850,36 @@ class DatabaseService extends ChangeNotifier {
       print('Add party failed: $e');
       _errorMessage = 'Failed to add party.';
       return null;
+    }
+  }
+
+  Future<void> fetchParties({bool isGuest = false}) async {
+    if (isGuest) return;
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+    try {
+      final response = await _client
+          .from(AppConstants.ledgersTable)
+          .select('id, user_id, name, phone, party_type, opening_balance, current_balance, created_at')
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+
+      final fetchedParties = (response as List)
+          .map((e) => Party.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+      final Map<String, Party> partyMap = {};
+      for (final p in _parties) {
+        partyMap[p.id] = p;
+      }
+      for (final p in fetchedParties) {
+        partyMap[p.id] = p;
+      }
+      _parties = partyMap.values.toList();
+      _parties.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) print('FETCH PARTIES ERROR: $e');
     }
   }
 

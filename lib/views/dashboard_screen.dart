@@ -11,7 +11,9 @@ import '../widgets/cash_entry_modal.dart';
 
 class DashboardScreen extends StatelessWidget {
   final ValueChanged<int>? onNavigateTab;
+  final VoidCallback? onOpenCashbook;
   final VoidCallback? onOpenParties;
+  final VoidCallback? onOpenInventory;
   final VoidCallback? onOpenBilling;
   final VoidCallback? onOpenStaff;
   final VoidCallback? onOpenReports;
@@ -20,7 +22,9 @@ class DashboardScreen extends StatelessWidget {
   const DashboardScreen({
     super.key,
     this.onNavigateTab,
+    this.onOpenCashbook,
     this.onOpenParties,
+    this.onOpenInventory,
     this.onOpenBilling,
     this.onOpenStaff,
     this.onOpenReports,
@@ -311,7 +315,13 @@ class DashboardScreen extends StatelessWidget {
                         subtitle: 'Track ledger entries',
                         icon: Icons.account_balance_wallet_rounded,
                         color: AppConstants.primaryColor,
-                        onTap: () => onNavigateTab?.call(1),
+                        onTap: () {
+                          if (onOpenCashbook != null) {
+                            onOpenCashbook!();
+                          } else {
+                            onNavigateTab?.call(1);
+                          }
+                        },
                       ),
 
                       // Card 2: Unified Parties Ledger
@@ -333,7 +343,13 @@ class DashboardScreen extends StatelessWidget {
                         icon: Icons.inventory_2_rounded,
                         color: AppConstants.secondaryColor,
                         badgeText: '${dbService.inventoryItems.length}',
-                        onTap: () => onNavigateTab?.call(2),
+                        onTap: () {
+                          if (onOpenInventory != null) {
+                            onOpenInventory!();
+                          } else {
+                            onNavigateTab?.call(2);
+                          }
+                        },
                       ),
 
                       // Card 4: Settings & Security
