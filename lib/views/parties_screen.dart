@@ -349,6 +349,44 @@ class _PartyLedgerDetailSheet extends StatefulWidget {
 class _PartyLedgerDetailSheetState extends State<_PartyLedgerDetailSheet> {
   String _dateRangeFilter = 'All Time'; // 'All Time', 'Today', 'This Month'
 
+  Future<void> _deletePartyAccount(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Delete Party Account?'),
+        content: Text(
+          'Delete "${widget.party.name}" from your ledgers?\n\n'
+          'Note: Associated CashBook transactions will be preserved for financial auditing.',
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.accentColor,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Delete Party'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && context.mounted) {
+      final dbService = Provider.of<DatabaseService>(context, listen: false);
+      final authService = Provider.of<AuthService>(context, listen: false);
+
+      final success = await dbService.deleteParty(widget.party.id, isGuest: authService.isGuestMode);
+      if (context.mounted && success) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Party "${widget.party.name}" deleted.')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dbService = Provider.of<DatabaseService>(context);
@@ -400,6 +438,10 @@ class _PartyLedgerDetailSheetState extends State<_PartyLedgerDetailSheet> {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded, color: AppConstants.accentColor),
+                onPressed: () => _deletePartyAccount(context),
               ),
               IconButton(
                 icon: const Icon(Icons.close_rounded),

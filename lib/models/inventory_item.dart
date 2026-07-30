@@ -97,7 +97,7 @@ class InventoryItem {
   }
 
   Map<String, dynamic> toSupabaseInsert(String userId) {
-    return {
+    final map = <String, dynamic>{
       'id': id,
       'user_id': userId,
       'name': name,
@@ -105,33 +105,41 @@ class InventoryItem {
       'sale_price': salePrice,
       'purchase_price': purchasePrice,
       'tax_included': taxIncluded,
-      'opening_stock': openingStock,
-      'stock_quantity': stockQuantity,
-      'low_stock_alert': lowStockAlert,
-      'hsn': hsn,
       'gst_rate': gstRate,
-      'weight_kg': weightKg,
       'category': category ?? 'General Utensils',
       'created_at': createdAt.toIso8601String(),
     };
+    if (openingStock > 0) map['opening_stock'] = openingStock;
+    if (stockQuantity > 0) map['stock_quantity'] = stockQuantity;
+    if (lowStockAlert > 0) map['low_stock_alert'] = lowStockAlert;
+    if (hsn != null && hsn!.trim().isNotEmpty) map['hsn'] = hsn!.trim();
+    if (weightKg != null && weightKg! > 0) {
+      map['weight_kg'] = weightKg;
+      map['weight_per_unit'] = weightKg;
+    }
+    return map;
   }
 
   Map<String, dynamic> toSupabaseUpdate(String userId) {
-    return {
+    final map = <String, dynamic>{
       'user_id': userId,
       'name': name,
       'unit': unit,
       'sale_price': salePrice,
       'purchase_price': purchasePrice,
       'tax_included': taxIncluded,
-      'opening_stock': openingStock,
-      'stock_quantity': stockQuantity,
-      'low_stock_alert': lowStockAlert,
-      'hsn': hsn,
       'gst_rate': gstRate,
-      'weight_kg': weightKg,
       'category': category ?? 'General Utensils',
     };
+    if (openingStock > 0) map['opening_stock'] = openingStock;
+    if (stockQuantity > 0) map['stock_quantity'] = stockQuantity;
+    if (lowStockAlert > 0) map['low_stock_alert'] = lowStockAlert;
+    if (hsn != null && hsn!.trim().isNotEmpty) map['hsn'] = hsn!.trim();
+    if (weightKg != null && weightKg! > 0) {
+      map['weight_kg'] = weightKg;
+      map['weight_per_unit'] = weightKg;
+    }
+    return map;
   }
 
   InventoryItem copyWith({

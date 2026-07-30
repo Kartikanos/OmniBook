@@ -178,6 +178,17 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
     final double saleP = double.tryParse(_salePriceController.text.trim()) ?? 0.0;
     final double purchP = double.tryParse(_purchasePriceController.text.trim()) ?? 0.0;
+
+    if (saleP <= 0 && purchP <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter at least a Sale Price or Purchase Price.'),
+          backgroundColor: AppConstants.accentColor,
+        ),
+      );
+      return;
+    }
+
     final int opStock = int.tryParse(_openingStockController.text.trim()) ?? 0;
     final int lowAlert = int.tryParse(_lowStockAlertController.text.trim()) ?? 5;
 

@@ -23,19 +23,19 @@ class AddPartyScreen extends StatefulWidget {
 }
 
 class _AddPartyScreenState extends State<AddPartyScreen> {
-  final _formKey = GlobalKey<FormState>();
+  static List<Contact>? _cachedContacts;
 
+  final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _openingBalanceController;
-
   late PartyType _selectedType;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
-    _phoneController = TextEditingController();
+    _nameController = TextEditingController(text: widget.initialName ?? '');
+    _phoneController = TextEditingController(text: widget.initialPhone ?? '');
     _openingBalanceController = TextEditingController(text: '0');
     _selectedType = widget.initialType;
   }
@@ -65,11 +65,14 @@ class _AddPartyScreenState extends State<AddPartyScreen> {
     }
 
     try {
-      // Fetch lightweight contact list to prevent Android Binder timeouts
-      final contacts = await FlutterContacts.getContacts(
-        withProperties: false,
-        withPhoto: false,
-      );
+      // Use cached contacts if available, otherwise fetch lightweight list
+      if (_cachedContacts == null || _cachedContacts!.isEmpty) {
+        _cachedContacts = await FlutterContacts.getContacts(
+          withProperties: false,
+          withPhoto: false,
+        );
+      }
+      final contacts = _cachedContacts!;
       if (!mounted) return;
 
       showModalBottomSheet(

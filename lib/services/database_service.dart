@@ -921,6 +921,34 @@ class DatabaseService extends ChangeNotifier {
     }
   }
 
+  // Delete Party / Ledger Account live from Supabase & local state without deleting cashbook records
+  Future<bool> deleteParty(String partyId, {bool isGuest = false}) async {
+    try {
+      _parties.removeWhere((p) => p.id == partyId);
+      notifyListeners();
+
+      if (!isGuest) {
+        final userId = _client.auth.currentUser?.id;
+        if (userId != null) {
+          try {
+            await _client
+                .from(AppConstants.ledgersTable)
+                .delete()
+                .eq('id', partyId);
+            print('--- SUCCESS! DELETED PARTY / LEDGER ROW: $partyId ---');
+          } catch (e) {
+            print('--- SUPABASE LEDGER DELETE ERROR: $e ---');
+          }
+          await _saveToLocalCache(userId);
+        }
+      }
+      return true;
+    } catch (e) {
+      print('Delete party failed: $e');
+      return false;
+    }
+  }
+
   // Filter Parties (Suppliers / Customers / All)
   List<Party> searchParties(String query, {String? filterType}) {
     List<Party> filtered = _parties;
