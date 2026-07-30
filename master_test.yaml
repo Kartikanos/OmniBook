@@ -1,0 +1,223 @@
+appId: com.example.omnibook
+---
+- launchApp
+
+# ==========================================
+# STEP 0: SELF-HEALING SESSION CLEAR
+# ==========================================
+- runFlow:
+    when:
+      visible: "Settings"
+    commands:
+      - tapOn: "Settings"
+      - tapOn: "Sign Out / Exit Session"
+      - extendedWaitUntil:
+          visible: "Sign In"
+          timeout: 5000
+
+# ==========================================
+# STEP 1: AUTHENTICATION & WRONG PASSWORD BUG TEST
+# ==========================================
+- extendedWaitUntil:
+    visible: "Email Address"
+    timeout: 5000
+
+# Test wrong password error handling
+- tapOn: "Email Address"
+- inputText: "kartikvitthalb37@gmail.com"
+- tapOn: "Password"
+- inputText: "wrongpassword123"
+- tapOn: "Sign In"
+
+# ASSERTIONS: Verify app shows explicit error message and doesn't just silently refresh
+- assertVisible: "kartikvitthalb37@gmail.com"
+- assertVisible: "Invalid credentials" # <--- WILL FAIL IF ERROR PROMPT IS MISSING!
+
+# Log in with valid credentials
+- tapOn: "Password"
+- eraseText
+- inputText: "kartikabhi@123"
+- tapOn: "Sign In"
+
+- extendedWaitUntil:
+    visible: "Hello, Manager"
+    timeout: 10000
+
+# ==========================================
+# STEP 2: GENERAL CASHBOOK TRANSACTIONS (CASH IN & CASH OUT)
+# ==========================================
+# Record General Cash In
+- tapOn: "Cash In (+)"
+- tapOn: "Utensil Item Name"
+- inputText: "laddu"
+- tapOn: "Unit Price (₹)"
+- inputText: "500"
+- tapOn: "Save Cash In"
+
+# Immediate Cross-Verification: Ensure Cash In reflects in Dashboard/Cashbook
+- assertVisible: "laddu"
+- assertVisible: "500"
+
+# Record General Cash Out
+- tapOn: "Cash Out (-)"
+- tapOn: "Total Amount (₹)"
+- inputText: "8000"
+- tapOn: "Save Cash Out"
+
+# Immediate Cross-Verification
+- assertVisible: "8000"
+
+# ==========================================
+# STEP 3: UTENSILS INVENTORY MANAGEMENT (ADD, EDIT, DELETE)
+# ==========================================
+- tapOn: "Inventory"
+- tapOn: "Add Item"
+- tapOn: "Item Name"
+- inputText: "Kadhai"
+- tapOn: "Unit Price"
+- inputText: "950"
+- tapOn: "Stock Quantity"
+- inputText: "10"
+- tapOn: "Add Stock Item"
+
+# Immediate Verification
+- assertVisible: "Kadhai"
+
+# Edit Item GST & Verify update
+- tapOn: "Kadhai"
+- tapOn: "12%"
+- tapOn: "Save Changes"
+- assertVisible: "GST: 12%"
+
+# Add Second Item for Stock Count Check
+- tapOn: "Add Item"
+- tapOn: "Item Name"
+- inputText: "Spoon"
+- tapOn: "Unit Price"
+- inputText: "50"
+- tapOn: "Stock Quantity"
+- inputText: "100"
+- tapOn: "Add Stock Item"
+- assertVisible: "Spoon"
+
+# ==========================================
+# STEP 4: PARTIES LEDGER & PARTY PAYMENT BUG DETECTOR
+# ==========================================
+- tapOn: "Dashboard"
+- tapOn: "Parties Ledger"
+- tapOn: "New Party"
+- tapOn: "Party / Business Name"
+- inputText: "ayush"
+- tapOn: "Phone Number"
+- inputText: "9876543210"
+- tapOn: "Save Party"
+
+# 1. Assert party created
+- assertVisible: "ayush"
+
+# 2. Add Party Payment (Cash In linked to Ayush)
+- tapOn: "Dashboard"
+- tapOn: "Cash In (+)"
+- tapOn: "Party Payment"
+- tapOn: "Select Party"
+- tapOn: "ayush"
+- tapOn: "Amount"
+- inputText: "1500"
+- tapOn: "Save Cash In"
+
+# 3. CRITICAL BUG CHECK: RE-OPEN PARTIES LEDGER & ASSERT AYUSH IS STILL THERE!
+- tapOn: "Dashboard"
+- tapOn: "Parties Ledger"
+- assertVisible: "ayush" # <--- MAESTRO WILL FAIL HERE IF AYUSH GLITCHES/VANISHES!
+
+# 4. Open Ayush Ledger Detail to verify transaction history
+- tapOn: "ayush"
+- assertVisible: "1500"
+- back
+
+# 5. Add Party Payment (Cash Out linked to Ayush)
+- tapOn: "Dashboard"
+- tapOn: "Cash Out (-)"
+- tapOn: "Party Payment"
+- tapOn: "Select Party"
+- tapOn: "ayush"
+- tapOn: "Amount"
+- inputText: "500"
+- tapOn: "Save Cash Out"
+
+# 6. CRITICAL BUG CHECK 2: Re-verify Ayush did not disappear after Cash Out
+- tapOn: "Dashboard"
+- tapOn: "Parties Ledger"
+- assertVisible: "ayush"
+- tapOn: "ayush"
+- assertVisible: "500"
+- back
+
+# ==========================================
+# STEP 5: WORKER / STAFF ATTENDANCE MANAGEMENT
+# ==========================================
+- tapOn: "Dashboard"
+- tapOn: "Staff Manager"
+- tapOn: "Half-Day"
+- assertVisible: "Half-Day"
+
+# ==========================================
+# STEP 6: SESSION 1 LOGOUT VERIFICATION
+# ==========================================
+- tapOn: "Settings"
+- tapOn: "Sign Out / Exit Session"
+
+- extendedWaitUntil:
+    visible: "Sign In"
+    timeout: 5000
+
+- assertVisible: "Sign In"
+
+# ==========================================
+# STEP 7: RE-LOGIN & TOTAL CLOUD DATA PERSISTENCE CHECK
+# ==========================================
+- tapOn: "Email Address"
+- inputText: "kartikvitthalb37@gmail.com"
+- tapOn: "Password"
+- inputText: "kartikabhi@123"
+- tapOn: "Sign In"
+
+- extendedWaitUntil:
+    visible: "Hello, Manager"
+    timeout: 10000
+
+# VERIFY GENERAL CASHBOOK SURVIVED LOGOUT
+- assertVisible: "laddu"
+- assertVisible: "8000"
+
+# VERIFY INVENTORY SURVIVED LOGOUT
+- tapOn: "Inventory"
+- assertVisible: "Kadhai"
+- assertVisible: "GST: 12%"
+- assertVisible: "Spoon"
+
+# VERIFY PARTIES LEDGER & PARTY PAYMENTS SURVIVED LOGOUT
+- tapOn: "Dashboard"
+- tapOn: "Parties Ledger"
+- assertVisible: "ayush" # <--- PERSISTENCE ASSERTION
+- tapOn: "ayush"
+- assertVisible: "1500"
+- assertVisible: "500"
+- back
+
+# VERIFY STAFF ATTENDANCE SURVIVED LOGOUT
+- tapOn: "Dashboard"
+- tapOn: "Staff Manager"
+- assertVisible: "Half-Day"
+
+# ==========================================
+# STEP 8: FINAL CLEANUP LOGOUT
+# ==========================================
+- tapOn: "Settings"
+- tapOn: "Sign Out / Exit Session"
+
+- extendedWaitUntil:
+    visible: "Sign In"
+    timeout: 5000
+
+- assertVisible: "Sign In"
