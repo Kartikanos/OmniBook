@@ -345,7 +345,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         const Text('Price includes Tax (GST)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                         Switch(
                           value: _taxIncluded,
-                          activeColor: AppConstants.primaryColor,
+                          activeThumbColor: AppConstants.primaryColor,
                           onChanged: (val) => setState(() => _taxIncluded = val),
                         ),
                       ],
@@ -360,82 +360,81 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1E293B) : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: isDark ? const Color(0xFF334155) : Colors.grey[300]!),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('STOCK INVENTORY DETAILS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                    const Text('Opening Stock & Alerts', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     const SizedBox(height: 14),
                     Row(
                       children: [
                         Expanded(
                           child: TextFormField(
                             controller: _openingStockController,
-                            keyboardType: TextInputType.number,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
                             decoration: InputDecoration(
-                              labelText: 'Opening Stock Count',
+                              labelText: 'Opening Stock',
+                              prefixIcon: const Icon(Icons.inventory_rounded),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: TextFormField(
+                            controller: _lowStockAlertController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: InputDecoration(
+                              labelText: 'Low Stock Alert',
+                              prefixIcon: const Icon(Icons.warning_amber_rounded),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            icon: const Icon(Icons.calendar_today_rounded, size: 16),
-                            label: Text('As of: ${_asOfDate.day}/${_asOfDate.month}/${_asOfDate.year}'),
-                            onPressed: () async {
-                              final picked = await showDatePicker(
-                                context: context,
-                                initialDate: _asOfDate,
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime(2030),
-                              );
-                              if (picked != null) setState(() => _asOfDate = picked);
-                            },
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _lowStockAlertController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        labelText: 'Low Stock Alert Threshold',
-                        hintText: 'Notify when stock falls below this number',
-                        prefixIcon: const Icon(Icons.warning_amber_rounded),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
+                      icon: const Icon(Icons.calendar_today_rounded, size: 16),
+                      label: Text('As of Date: ${_asOfDate.day}/${_asOfDate.month}/${_asOfDate.year}'),
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _asOfDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2030),
+                        );
+                        if (picked != null) setState(() => _asOfDate = picked);
+                      },
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
 
-              // Tax & GST Section Card
+              // Tax & GST Rates Card
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1E293B) : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: isDark ? const Color(0xFF334155) : Colors.grey[300]!),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('TAX & GST DETAILS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                    const Text('Tax & GST Configuration', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                     const SizedBox(height: 14),
                     TextFormField(
                       controller: _hsnController,
                       decoration: InputDecoration(
                         labelText: 'HSN / SAC Code (Optional)',
-                        hintText: 'e.g. 7323',
+                        prefixIcon: const Icon(Icons.qr_code_rounded),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
@@ -446,7 +445,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         const Text('Exempt from Tax', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                         Switch(
                           value: _isExempt,
-                          activeColor: AppConstants.primaryColor,
+                          activeThumbColor: AppConstants.primaryColor,
                           onChanged: (val) => setState(() => _isExempt = val),
                         ),
                       ],
@@ -462,7 +461,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                           return ChoiceChip(
                             label: Text('${rate.toStringAsFixed(0)}%'),
                             selected: isSel,
-                            selectedColor: AppConstants.primaryColor.withOpacity(0.2),
+                            selectedColor: AppConstants.primaryColor.withValues(alpha: 0.2),
                             backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
                             labelStyle: TextStyle(
                               color: isSel ? AppConstants.primaryColor : (isDark ? Colors.white70 : Colors.black87),

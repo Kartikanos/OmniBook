@@ -138,7 +138,7 @@ class _PartiesScreenState extends State<PartiesScreen> {
                       child: ChoiceChip(
                         label: Text(type),
                         selected: isSelected,
-                        selectedColor: AppConstants.primaryColor.withOpacity(0.2),
+                        selectedColor: AppConstants.primaryColor.withValues(alpha: 0.2),
                         backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.grey[200],
                         labelStyle: TextStyle(
                           color: isSelected
@@ -221,7 +221,7 @@ class _PartiesScreenState extends State<PartiesScreen> {
                                     children: [
                                       CircleAvatar(
                                         radius: 22,
-                                        backgroundColor: tagColor.withOpacity(0.18),
+                                        backgroundColor: tagColor.withValues(alpha: 0.18),
                                         child: Icon(
                                           party.type == PartyType.supplier
                                               ? Icons.local_shipping_outlined
@@ -252,9 +252,9 @@ class _PartiesScreenState extends State<PartiesScreen> {
                                                 Container(
                                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                                   decoration: BoxDecoration(
-                                                    color: tagColor.withOpacity(0.15),
+                                                    color: tagColor.withValues(alpha: 0.15),
                                                     borderRadius: BorderRadius.circular(8),
-                                                    border: Border.all(color: tagColor.withOpacity(0.4), width: 1),
+                                                    border: Border.all(color: tagColor.withValues(alpha: 0.4), width: 1),
                                                   ),
                                                   child: Text(
                                                     party.typeLabel,
@@ -302,7 +302,7 @@ class _PartiesScreenState extends State<PartiesScreen> {
                                                   Container(
                                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                                     decoration: BoxDecoration(
-                                                      color: (isRec ? AppConstants.cashInColor : AppConstants.cashOutColor).withOpacity(0.12),
+                                                      color: (isRec ? AppConstants.cashInColor : AppConstants.cashOutColor).withValues(alpha: 0.12),
                                                       borderRadius: BorderRadius.circular(6),
                                                     ),
                                                     child: Text(
@@ -415,8 +415,8 @@ class _PartyLedgerDetailSheetState extends State<_PartyLedgerDetailSheet> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isReceivable
-                  ? AppConstants.cashInColor.withOpacity(0.12)
-                  : AppConstants.cashOutColor.withOpacity(0.12),
+                  ? AppConstants.cashInColor.withValues(alpha: 0.12)
+                  : AppConstants.cashOutColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isReceivable ? AppConstants.cashInColor : AppConstants.cashOutColor,
@@ -467,7 +467,7 @@ class _PartyLedgerDetailSheetState extends State<_PartyLedgerDetailSheet> {
                 child: ChoiceChip(
                   label: Text(filter),
                   selected: isSel,
-                  selectedColor: AppConstants.primaryColor.withOpacity(0.2),
+                  selectedColor: AppConstants.primaryColor.withValues(alpha: 0.2),
                   backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.grey[200],
                   labelStyle: TextStyle(
                     color: isSel ? AppConstants.primaryAccent : (isDark ? Colors.white70 : Colors.black87),
