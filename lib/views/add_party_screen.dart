@@ -89,7 +89,7 @@ class _AddPartyScreenState extends State<AddPartyScreen> {
               }
             }
 
-            if (mounted) {
+            if (ctx.mounted) {
               setState(() {
                 _nameController.text = name;
                 if (phone.isNotEmpty) _phoneController.text = phone;
