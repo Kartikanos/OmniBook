@@ -258,20 +258,11 @@ class DatabaseService extends ChangeNotifier {
 
     // B) Fetch Inventory Items
     try {
-      dynamic response;
-      try {
-        response = await _client
-            .from('inventory_items')
-            .select()
-            .eq('user_id', userId)
-            .order('created_at', ascending: false);
-      } catch (e) {
-        response = await _client
-            .from('inventory')
-            .select()
-            .eq('user_id', userId)
-            .order('created_at', ascending: false);
-      }
+      final response = await _client
+          .from('inventory_items')
+          .select()
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
 
       _inventoryItems = (response as List)
           .map((e) => InventoryItem.fromJson(e as Map<String, dynamic>))
@@ -737,25 +728,8 @@ class DatabaseService extends ChangeNotifier {
             }
             await fetchInventoryItems(isGuest: isGuest);
           } catch (e) {
-            print('--- INVENTORY_ITEMS WRITE NOTICE, TRYING FALLBACK TABLE inventory: $e ---');
-            try {
-              if (isEditing) {
-                await _client
-                    .from('inventory')
-                    .update(jsonMap)
-                    .eq('id', item.id);
-              } else {
-                final response = await _client
-                    .from('inventory')
-                    .insert(jsonMap)
-                    .select();
-                print('--- SUCCESS! INSERTED FALLBACK INVENTORY ROW: $response ---');
-              }
-              await fetchInventoryItems(isGuest: isGuest);
-            } catch (err) {
-              print('--- SUPABASE INVENTORY OFFLINE QUEUED: $err ---');
-              await _addToOfflineQueue(userId, 'inventory_items', item.toJson());
-            }
+            print('--- SUPABASE INVENTORY_ITEMS OFFLINE QUEUED: $e ---');
+            await _addToOfflineQueue(userId, 'inventory_items', item.toJson());
           }
           await _saveToLocalCache(userId);
         }
@@ -774,20 +748,11 @@ class DatabaseService extends ChangeNotifier {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) return;
     try {
-      dynamic response;
-      try {
-        response = await _client
-            .from('inventory_items')
-            .select()
-            .eq('user_id', userId)
-            .order('created_at', ascending: false);
-      } catch (e) {
-        response = await _client
-            .from('inventory')
-            .select()
-            .eq('user_id', userId)
-            .order('created_at', ascending: false);
-      }
+      final response = await _client
+          .from('inventory_items')
+          .select()
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
 
       _inventoryItems = (response as List)
           .map((e) => InventoryItem.fromJson(e as Map<String, dynamic>))
@@ -813,15 +778,9 @@ class DatabaseService extends ChangeNotifier {
                 .from('inventory_items')
                 .delete()
                 .eq('id', itemId);
+            print('--- SUCCESS! DELETED INVENTORY_ITEMS ITEM: $itemId ---');
           } catch (e) {
-            try {
-              await _client
-                  .from('inventory')
-                  .delete()
-                  .eq('id', itemId);
-            } catch (err) {
-              print('--- SUPABASE INVENTORY DELETE ERROR: $err ---');
-            }
+            print('--- SUPABASE INVENTORY_ITEMS DELETE ERROR: $e ---');
           }
           await _saveToLocalCache(userId);
         }

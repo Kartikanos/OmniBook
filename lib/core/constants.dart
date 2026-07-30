@@ -6,7 +6,7 @@ class AppConstants {
   // Supabase Table Names
   static const String profilesTable = 'profiles';
   static const String cashEntriesTable = 'cashbook_entries';
-  static const String inventoryTable = 'inventory';
+  static const String inventoryTable = 'inventory_items';
   static const String ledgersTable = 'ledgers';
 
   // Colors
