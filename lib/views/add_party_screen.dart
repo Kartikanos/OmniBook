@@ -12,10 +12,14 @@ import '../services/auth_service.dart';
 
 class AddPartyScreen extends StatefulWidget {
   final PartyType initialType;
+  final String? initialName;
+  final String? initialPhone;
 
   const AddPartyScreen({
     super.key,
     this.initialType = PartyType.customer,
+    this.initialName,
+    this.initialPhone,
   });
 
   @override
